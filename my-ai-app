@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puter.js FLUX Pro Image Generator</title>
+    <!-- Puter.js SDK -->
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .app-card { background: #1e293b; width: 100%; max-width: 480px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+        h2 { margin-bottom: 15px; color: #38bdf8; font-size: 22px; }
+        textarea { width: 100%; height: 90px; background: #0f172a; border: 1px solid #334155; border-radius: 12px; color: #fff; padding: 12px; font-size: 14px; resize: none; outline: none; }
+        textarea:focus { border-color: #38bdf8; }
+        .btn { width: 100%; padding: 14px; margin-top: 12px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-generate { background: #0284c7; color: #fff; }
+        .btn-generate:hover { background: #0369a1; }
+        .btn-generate:disabled { background: #475569; cursor: not-allowed; }
+        .btn-download { background: #16a34a; color: #fff; margin-top: 10px; display: none; }
+        .status-text { margin-top: 12px; font-size: 13px; color: #94a3b8; min-height: 20px; word-break: break-all; }
+        
+        .image-box { margin-top: 15px; width: 100%; min-height: 300px; max-height: 420px; background: #0f172a; border: 2px dashed #334155; border-radius: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .image-box img { width: 100%; height: auto; max-height: 420px; object-fit: contain; border-radius: 12px; }
+        
+        .placeholder { color: #64748b; font-size: 14px; }
+        .loader { border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <h2>Puter.js FLUX Pro Generator</h2>
+    <textarea id="promptInput" placeholder="এখানে প্রম্পট লিখুন (যেমন: A high resolution cinematic photo of a cat)..."></textarea>
+    
+    <button id="genBtn" class="btn btn-generate" onclick="generateImage()">Generate HD Image</button>
+    
+    <p id="statusText" class="status-text"></p>
+
+    <div class="image-box" id="imageContainer">
+        <div id="loader" class="loader"></div>
+        <span id="placeholderText" class="placeholder">কোয়ালিটি ছবি এখানে দেখাবে</span>
+    </div>
+
+    <button id="downloadBtn" class="btn btn-download" onclick="downloadImage()">Download Image</button>
+</div>
+
+<script>
+let activeImageSrc = "";
+
+async function generateImage() {
+    const promptInput = document.getElementById("promptInput");
+    const rawPrompt = promptInput.value.trim();
+    const btn = document.getElementById("genBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const statusText = document.getElementById("statusText");
+    const container = document.getElementById("imageContainer");
+    const placeholder = document.getElementById("placeholderText");
+    const loader = document.getElementById("loader");
+
+    if (!rawPrompt) {
+        alert("দয়া করে একটি প্রম্পট লিখুন!");
+        return;
+    }
+
+    const existingImg = container.querySelector("img");
+    if (existingImg) existingImg.remove();
+
+    btn.disabled = true;
+    downloadBtn.style.display = "none";
+    statusText.innerText = "Puter.js দিয়ে FLUX Pro কোয়ালিটির ছবি তৈরি হচ্ছে...";
+    placeholder.style.display = "none";
+    loader.style.display = "block";
+
+    try {
+        const imageElement = await puter.ai.txt2img(rawPrompt, {
+            model: "black-forest-labs/flux-2-pro",
+            disable_safety_checker: true
+        });
+
+        loader.style.display = "none";
+        container.appendChild(imageElement);
+        
+        activeImageSrc = imageElement.src;
+        downloadBtn.style.display = "block";
+        statusText.innerText = "ছবি সফলভাবে তৈরি হয়েছে!";
+    } catch (error) {
+        console.error(error);
+        loader.style.display = "none";
+        placeholder.style.display = "block";
+        placeholder.innerText = "ছবি জেনারেট করতে ত্রুটি ঘটেছে।";
+        statusText.innerText = "Error: " + (error.message || "কাজ করেনি");
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function downloadImage() {
+    if (!activeImageSrc) return;
+    const a = document.createElement("a");
+    a.href = activeImageSrc;
+    a.download = `Puter_FLUX_Image_${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+
+</body>
+</html>
